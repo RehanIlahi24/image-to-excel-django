@@ -62,37 +62,37 @@ def image_url_to_excel_convert_view(request):
         if not image_data:
             return Response({'error': 'Image data is required'}, status=400)
         
-        try:
-            image_save_path = os.path.join(settings.MEDIA_ROOT, 'images', 'uploaded_image.png')
-            os.makedirs(os.path.dirname(image_save_path), exist_ok=True)
+        # try:
+        image_save_path = os.path.join(settings.MEDIA_ROOT, 'images', 'uploaded_image.png')
+        os.makedirs(os.path.dirname(image_save_path), exist_ok=True)
+        
+        if image_data.startswith('data:image/'):
+            header, base64_data = image_data.split(',', 1)
+            image_bytes = base64.b64decode(base64_data)
             
-            if image_data.startswith('data:image/'):
-                header, base64_data = image_data.split(',', 1)
-                image_bytes = base64.b64decode(base64_data)
-                
-                with open(image_save_path, 'wb') as image_file:
-                    image_file.write(image_bytes)
-            
-            else:
-                response = requests.get(image_data, stream=True)
-                response.raise_for_status()
+            with open(image_save_path, 'wb') as image_file:
+                image_file.write(image_bytes)
+        
+        else:
+            response = requests.get(image_data, stream=True)
+            response.raise_for_status()
 
-                with open(image_save_path, 'wb') as image_file:
-                    for chunk in response.iter_content(1024):
-                        image_file.write(chunk)
-            
-            output_excel_path = os.path.join(settings.MEDIA_ROOT, 'output_table.xlsx')
-            image_to_excel_converter_function(image_save_path, output_excel_path)
+            with open(image_save_path, 'wb') as image_file:
+                for chunk in response.iter_content(1024):
+                    image_file.write(chunk)
+        
+        output_excel_path = os.path.join(settings.MEDIA_ROOT, 'output_table.xlsx')
+        image_to_excel_converter_function(image_save_path, output_excel_path)
 
-            data_instance = Data()
-            data_instance.image.save('uploaded_image.png', File(open(image_save_path, 'rb')))
-            data_instance.file.save('output_table.xlsx', open(output_excel_path, 'rb'))
-            data_instance.save()
+        data_instance = Data()
+        data_instance.image.save('uploaded_image.png', File(open(image_save_path, 'rb')))
+        data_instance.file.save('output_table.xlsx', open(output_excel_path, 'rb'))
+        data_instance.save()
 
-            generate_excel_preview(data_instance)
+        generate_excel_preview(data_instance)
 
-        except (requests.exceptions.RequestException, ValueError) as e:
-            return Response({'error': f'Failed to process image: {e}'}, status=400)
+        # except (requests.exceptions.RequestException, ValueError) as e:
+        #     return Response({'error': f'Failed to process image: {e}'}, status=400)
         
         return Response(Data.objects.filter(id=data_instance.id).values('id', 'image', 'file', 'preview_image', 'created_at').first())
     
