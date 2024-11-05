@@ -30,7 +30,11 @@ def image_to_excel_convert_view(request):
             temp_image_file.write(image.read())
             temp_image_path = temp_image_file.name
 
-        output_excel_path = os.path.join(settings.MEDIA_ROOT, 'output_table.xlsx')
+        media_root = settings.MEDIA_ROOT
+        if not os.path.exists(media_root):
+            os.makedirs(media_root)
+
+        output_excel_path = os.path.join(media_root, 'output_table.xlsx')
 
         try:
             image_to_excel_converter_function(temp_image_path, output_excel_path)
