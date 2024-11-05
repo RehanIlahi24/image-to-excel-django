@@ -40,10 +40,12 @@ def image_to_excel_convert_view(request):
             data_instance.file.save('output_table.xlsx', open(output_excel_path, 'rb'))
             data_instance.save()
 
+            generate_excel_preview(data_instance)
+
         finally:
             os.remove(temp_image_path)
         
-        return Response(Data.objects.filter(id=data_instance.id).values('id', 'image', 'file').first())
+        return Response(Data.objects.filter(id=data_instance.id).values('id', 'image', 'file', 'preview_image', 'created_at').first())
     
 
 @api_view(['POST'])
@@ -83,13 +85,15 @@ def image_url_to_excel_convert_view(request):
             data_instance.file.save('output_table.xlsx', open(output_excel_path, 'rb'))
             data_instance.save()
 
+            generate_excel_preview(data_instance)
+
         except (requests.exceptions.RequestException, ValueError) as e:
             return Response({'error': f'Failed to process image: {e}'}, status=400)
         
-        return Response(Data.objects.filter(id=data_instance.id).values('id', 'image', 'file').first())
+        return Response(Data.objects.filter(id=data_instance.id).values('id', 'image', 'file', 'preview_image', 'created_at').first())
     
 
-@api_view(['GET', 'DELETE'])
+@api_view(['GET', 'DELETE', 'PUT'])
 @permission_classes([AllowAny])
 def data_view(request):
     if request.method == 'GET':
@@ -100,12 +104,12 @@ def data_view(request):
             data_instance = Data.objects.filter(id=id).first()
             if not data_instance:
                 return Response({'error': 'File not found'}, status=400)
-            return Response(data_instance.values('id', 'image', 'file'))
+            return Response(data_instance.values('id', 'image', 'file', 'preview_image', 'created_at'))
         
         if data_type == 'recent':
-            data_instances = Data.objects.order_by('-id')[:5].values('id', 'image', 'file')
+            data_instances = Data.objects.order_by('-id')[:5].values('id', 'image', 'file', 'preview_image', 'created_at')
         else:
-            data_instances = Data.objects.order_by('-id').values('id', 'image', 'file')
+            data_instances = Data.objects.order_by('-id').values('id', 'image', 'file', 'preview_image', 'created_at')
         return Response(list(data_instances))
     
     if request.method == 'PUT':
@@ -113,11 +117,11 @@ def data_view(request):
         id = data.get('id')
         new_file_name = data.get('file_name')
         if not id or not new_file_name:
-            return Response({'error': 'ID and new file name are required'}, status=400)
+            return Response({'error': 'File name are required'}, status=400)
 
         data_instance = Data.objects.filter(id=id).first()
         if not data_instance:
-            return Response({'error': 'File not found'}, status=404)
+            return Response({'error': 'File not found'}, status=400)
         
         data_instance.file.name = new_file_name
         data_instance.save()
