@@ -54,10 +54,13 @@ def generate_excel_preview(data_instance):
         fig, ax = plt.subplots(figsize=(10, 5))
         ax.axis('off')
 
-        table = ax.table(cellText=df.values, colLabels=df.columns, cellLoc='center', loc='center')
-        table.auto_set_font_size(False)
-        table.set_fontsize(10)
-        table.scale(1.2, 1.2)
+        if df.empty:
+            ax.text(0.5, 0.5, "No data found", ha='center', va='center', fontsize=15, color='red', fontweight='bold')
+        else:
+            table = ax.table(cellText=df.values, colLabels=df.columns, cellLoc='center', loc='center')
+            table.auto_set_font_size(False)
+            table.set_fontsize(10)
+            table.scale(1.2, 1.2)
 
         preview_image_path = "excel_image.png" 
         plt.savefig(preview_image_path, bbox_inches='tight', dpi=300)
